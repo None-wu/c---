@@ -1,0 +1,24 @@
+# 编译产物
+*.exe
+*.o
+*.obj
+
+# GTK 运行时
+*.dll
+share/
+
+# 用户数据
+study_data.txt
+
+# 备份
+备份/
+
+# IDE
+.vs/
+.vscode/
+*.sln
+*.vcxproj*
+
+# 临时文件
+*.tmp
+*.log
