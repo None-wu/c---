@@ -498,7 +498,7 @@ void save_data() {
 			return;
 	}
 
-	fprintf(file, "%s\n%s\n%d\n%s\n%s\n",
+	fprintf(file, "%s\t%s\t%d\t%s\t%s\n",
 	        current_student.name,
 	        current_student.major,
 	        current_student.grade,
@@ -507,7 +507,7 @@ void save_data() {
 
 	fprintf(file, "%d\n", course_count);
 	for (int i = 0; i < course_count; i++) {
-		fprintf(file, "%s\n%s\n%s\n%d\n",
+		fprintf(file, "%s\t%s\t%s\t%d\n",
 		        courses[i].course_name,
 		        courses[i].time,
 		        courses[i].classroom,
@@ -516,7 +516,7 @@ void save_data() {
 
 	fprintf(file, "%d\n", task_count);
 	for (int i = 0; i < task_count; i++) {
-		fprintf(file, "%s\n%s\n%d\n%s\n%d\n",
+		fprintf(file, "%s\t%s\t%d\t%s\t%d\n",
 		        tasks[i].task_name,
 		        tasks[i].deadline,
 		        tasks[i].completed,
@@ -526,14 +526,14 @@ void save_data() {
 
 	fprintf(file, "%d\n", mood_count);
 	for (int i = 0; i < mood_count; i++) {
-		fprintf(file, "%s\n%s\n",
+		fprintf(file, "%s\t%s\n",
 		        mood_logs[i].date,
 		        mood_logs[i].status);
 	}
 
 	fprintf(file, "%d\n", error_count);
 	for (int i = 0; i < error_count; i++) {
-		fprintf(file, "%s\n%s\n%s\n",
+		fprintf(file, "%s\t%s\t%s\n",
 		        error_questions[i].question_path,
 		        error_questions[i].subject,
 		        error_questions[i].difficulty);
@@ -754,66 +754,71 @@ void load_data() {
 	if (!file)
 		return;
 
-	// 安全读取学生信息
-	char temp_name[100], temp_major[50], temp_baseline[100], temp_goal[100];
-	int temp_grade;
+	char line[MAX_LINE_LENGTH];
 
-	if (fscanf(file, "%99s", temp_name) == 1) {
-		strncpy(current_student.name, temp_name, sizeof(current_student.name) - 1);
-		current_student.name[sizeof(current_student.name) - 1] = '\0';
-	}
-
-	if (fscanf(file, "%49s", temp_major) == 1) {
-		strncpy(current_student.major, temp_major, sizeof(current_student.major) - 1);
-		current_student.major[sizeof(current_student.major) - 1] = '\0';
-	}
-
-	if (fscanf(file, "%d", &temp_grade) == 1) {
-		current_student.grade = temp_grade;
-	}
-
-	if (fscanf(file, "%99s", temp_baseline) == 1) {
-		strncpy(current_student.learning_baseline, temp_baseline, sizeof(current_student.learning_baseline) - 1);
-		current_student.learning_baseline[sizeof(current_student.learning_baseline) - 1] = '\0';
-	} else {
-		strncpy(current_student.learning_baseline, "一般", sizeof(current_student.learning_baseline) - 1);
-		current_student.learning_baseline[sizeof(current_student.learning_baseline) - 1] = '\0';
-	}
-
-	if (fscanf(file, "%99s", temp_goal) == 1) {
-		strncpy(current_student.learning_goal, temp_goal, sizeof(current_student.learning_goal) - 1);
-		current_student.learning_goal[sizeof(current_student.learning_goal) - 1] = '\0';
-	} else {
-		strncpy(current_student.learning_goal, "其他", sizeof(current_student.learning_goal) - 1);
-		current_student.learning_goal[sizeof(current_student.learning_goal) - 1] = '\0';
+	// 读取学生信息（第一行：name\tmajor\tgrade\tbaseline\tgoal）
+	if (fgets(line, sizeof(line), file)) {
+		line[strcspn(line, "\r\n")] = '\0';
+		char *token = strtok(line, "\t");
+		if (token) {
+			strncpy(current_student.name, token, sizeof(current_student.name) - 1);
+			current_student.name[sizeof(current_student.name) - 1] = '\0';
+		}
+		token = strtok(NULL, "\t");
+		if (token) {
+			strncpy(current_student.major, token, sizeof(current_student.major) - 1);
+			current_student.major[sizeof(current_student.major) - 1] = '\0';
+		}
+		token = strtok(NULL, "\t");
+		if (token) {
+			current_student.grade = atoi(token);
+		}
+		token = strtok(NULL, "\t");
+		if (token) {
+			strncpy(current_student.learning_baseline, token, sizeof(current_student.learning_baseline) - 1);
+			current_student.learning_baseline[sizeof(current_student.learning_baseline) - 1] = '\0';
+		} else {
+			strncpy(current_student.learning_baseline, "一般", sizeof(current_student.learning_baseline) - 1);
+			current_student.learning_baseline[sizeof(current_student.learning_baseline) - 1] = '\0';
+		}
+		token = strtok(NULL, "\t");
+		if (token) {
+			strncpy(current_student.learning_goal, token, sizeof(current_student.learning_goal) - 1);
+			current_student.learning_goal[sizeof(current_student.learning_goal) - 1] = '\0';
+		} else {
+			strncpy(current_student.learning_goal, "其他", sizeof(current_student.learning_goal) - 1);
+			current_student.learning_goal[sizeof(current_student.learning_goal) - 1] = '\0';
+		}
 	}
 
 	// 读取课程
 	int temp_course_count;
-	if (fscanf(file, "%d", &temp_course_count) == 1) {
+	if (fgets(line, sizeof(line), file)) {
+		line[strcspn(line, "\r\n")] = '\0';
+		temp_course_count = atoi(line);
 		temp_course_count = temp_course_count > MAX_COURSES ? MAX_COURSES : temp_course_count;
 
 		for (int i = 0; i < temp_course_count; i++) {
-			char temp_course[100], temp_time[50], temp_classroom[50];
-			int temp_day;
-
-			if (fscanf(file, "%99s", temp_course) == 1) {
-				strncpy(courses[i].course_name, temp_course, sizeof(courses[i].course_name) - 1);
+			if (!fgets(line, sizeof(line), file)) break;
+			line[strcspn(line, "\r\n")] = '\0';
+			char *token = strtok(line, "\t");
+			if (token) {
+				strncpy(courses[i].course_name, token, sizeof(courses[i].course_name) - 1);
 				courses[i].course_name[sizeof(courses[i].course_name) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%49s", temp_time) == 1) {
-				strncpy(courses[i].time, temp_time, sizeof(courses[i].time) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(courses[i].time, token, sizeof(courses[i].time) - 1);
 				courses[i].time[sizeof(courses[i].time) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%49s", temp_classroom) == 1) {
-				strncpy(courses[i].classroom, temp_classroom, sizeof(courses[i].classroom) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(courses[i].classroom, token, sizeof(courses[i].classroom) - 1);
 				courses[i].classroom[sizeof(courses[i].classroom) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%d", &temp_day) == 1) {
-				courses[i].day = temp_day;
+			token = strtok(NULL, "\t");
+			if (token) {
+				courses[i].day = atoi(token);
 			}
 		}
 		course_count = temp_course_count;
@@ -821,36 +826,38 @@ void load_data() {
 
 	// 读取任务
 	int temp_task_count;
-	if (fscanf(file, "%d", &temp_task_count) == 1) {
+	if (fgets(line, sizeof(line), file)) {
+		line[strcspn(line, "\r\n")] = '\0';
+		temp_task_count = atoi(line);
 		temp_task_count = temp_task_count > MAX_TASKS ? MAX_TASKS : temp_task_count;
 
 		for (int i = 0; i < temp_task_count; i++) {
-			char temp_task[100], temp_deadline[20], temp_desc[200];
-			int temp_completed, temp_duration;
-
-			if (fscanf(file, "%99s", temp_task) == 1) {
-				strncpy(tasks[i].task_name, temp_task, sizeof(tasks[i].task_name) - 1);
+			if (!fgets(line, sizeof(line), file)) break;
+			line[strcspn(line, "\r\n")] = '\0';
+			char *token = strtok(line, "\t");
+			if (token) {
+				strncpy(tasks[i].task_name, token, sizeof(tasks[i].task_name) - 1);
 				tasks[i].task_name[sizeof(tasks[i].task_name) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%19s", temp_deadline) == 1) {
-				strncpy(tasks[i].deadline, temp_deadline, sizeof(tasks[i].deadline) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(tasks[i].deadline, token, sizeof(tasks[i].deadline) - 1);
 				tasks[i].deadline[sizeof(tasks[i].deadline) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%d", &temp_completed) == 1) {
-				tasks[i].completed = temp_completed;
+			token = strtok(NULL, "\t");
+			if (token) {
+				tasks[i].completed = atoi(token);
 			}
-
-			if (fscanf(file, "%199s", temp_desc) == 1) {
-				strncpy(tasks[i].description, temp_desc, sizeof(tasks[i].description) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(tasks[i].description, token, sizeof(tasks[i].description) - 1);
 				tasks[i].description[sizeof(tasks[i].description) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%d", &temp_duration) == 1) {
-				tasks[i].duration = temp_duration;
+			token = strtok(NULL, "\t");
+			if (token) {
+				tasks[i].duration = atoi(token);
 			} else {
-				tasks[i].duration = 30; // 默认30分钟
+				tasks[i].duration = 30;
 			}
 		}
 		task_count = temp_task_count;
@@ -858,19 +865,22 @@ void load_data() {
 
 	// 读取心情记录
 	int temp_mood_count;
-	if (fscanf(file, "%d", &temp_mood_count) == 1) {
+	if (fgets(line, sizeof(line), file)) {
+		line[strcspn(line, "\r\n")] = '\0';
+		temp_mood_count = atoi(line);
 		temp_mood_count = temp_mood_count > MAX_MOOD ? MAX_MOOD : temp_mood_count;
 
 		for (int i = 0; i < temp_mood_count; i++) {
-			char temp_date[20], temp_status[20];
-
-			if (fscanf(file, "%19s", temp_date) == 1) {
-				strncpy(mood_logs[i].date, temp_date, sizeof(mood_logs[i].date) - 1);
+			if (!fgets(line, sizeof(line), file)) break;
+			line[strcspn(line, "\r\n")] = '\0';
+			char *token = strtok(line, "\t");
+			if (token) {
+				strncpy(mood_logs[i].date, token, sizeof(mood_logs[i].date) - 1);
 				mood_logs[i].date[sizeof(mood_logs[i].date) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%19s", temp_status) == 1) {
-				strncpy(mood_logs[i].status, temp_status, sizeof(mood_logs[i].status) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(mood_logs[i].status, token, sizeof(mood_logs[i].status) - 1);
 				mood_logs[i].status[sizeof(mood_logs[i].status) - 1] = '\0';
 			}
 		}
@@ -879,24 +889,27 @@ void load_data() {
 
 	// 读取错题记录
 	int temp_error_count;
-	if (fscanf(file, "%d", &temp_error_count) == 1) {
+	if (fgets(line, sizeof(line), file)) {
+		line[strcspn(line, "\r\n")] = '\0';
+		temp_error_count = atoi(line);
 		temp_error_count = temp_error_count > MAX_ERRORS ? MAX_ERRORS : temp_error_count;
 
 		for (int i = 0; i < temp_error_count; i++) {
-			char temp_path[200], temp_subject[50], temp_difficulty[20];
-
-			if (fscanf(file, "%199s", temp_path) == 1) {
-				strncpy(error_questions[i].question_path, temp_path, sizeof(error_questions[i].question_path) - 1);
+			if (!fgets(line, sizeof(line), file)) break;
+			line[strcspn(line, "\r\n")] = '\0';
+			char *token = strtok(line, "\t");
+			if (token) {
+				strncpy(error_questions[i].question_path, token, sizeof(error_questions[i].question_path) - 1);
 				error_questions[i].question_path[sizeof(error_questions[i].question_path) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%49s", temp_subject) == 1) {
-				strncpy(error_questions[i].subject, temp_subject, sizeof(error_questions[i].subject) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(error_questions[i].subject, token, sizeof(error_questions[i].subject) - 1);
 				error_questions[i].subject[sizeof(error_questions[i].subject) - 1] = '\0';
 			}
-
-			if (fscanf(file, "%19s", temp_difficulty) == 1) {
-				strncpy(error_questions[i].difficulty, temp_difficulty, sizeof(error_questions[i].difficulty) - 1);
+			token = strtok(NULL, "\t");
+			if (token) {
+				strncpy(error_questions[i].difficulty, token, sizeof(error_questions[i].difficulty) - 1);
 				error_questions[i].difficulty[sizeof(error_questions[i].difficulty) - 1] = '\0';
 			}
 		}
@@ -3129,7 +3142,14 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_ALL, "");          //使用系统区域设置
 #ifdef _WIN32
 	setlocale(LC_ALL, ".UTF-8");
-	_putenv("FONTCONFIG_PATH=E:\\学习系统\\fonts");
+	// 动态获取 exe 所在目录，拼接相对路径 fonts
+	char exe_path[MAX_PATH];
+	GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+	char *last_slash = strrchr(exe_path, '\\');
+	if (last_slash) *last_slash = '\0';
+	char fontconfig_env[MAX_PATH + 20];
+	snprintf(fontconfig_env, sizeof(fontconfig_env), "FONTCONFIG_PATH=%s\\fonts", exe_path);
+	_putenv(fontconfig_env);
 #endif
 	GtkApplication *app = gtk_application_new("com.example.study_manager", G_APPLICATION_DEFAULT_FLAGS);
 	g_signal_connect(app, "activate", G_CALLBACK(create_main_window), NULL);
